@@ -24,12 +24,22 @@ start()->
 
 connect(ConsumerKey, ConsumerSecret, AccessToken, AccessTokenSecret)->
 	Consumer = {ConsumerKey, ConsumerSecret, hmac_sha1},
-	%Url="http://127.0.0.1:5000",
 	Url="https://stream.twitter.com/1.1/statuses/sample.json",
-httpc:request(get, {Url, [{"Authorization", lists:append("OAuth ", oauth:header_params_encode(oauth:sign("GET", Url, [], Consumer, AccessToken, AccessTokenSecret)))}, {"Accept", "*/*"}, {"Host","stream.twitter.com"}]}, [], [{headers_as_is, true}]).
+	httpc:request(get, {Url, [{"Authorization", lists:append("OAuth ", oauth:header_params_encode(oauth:sign("GET", Url, [], Consumer, AccessToken, AccessTokenSecret)))}, {"Accept", "*/*"}, {"Host","stream.twitter.com"}]}, [], [{headers_as_is, true}, {stream, self}, {sync, false}]),
+	handle(),
+				
+	ok.
 
-
-
+handle()->
+	receive
+		 {http, {RequestId, stream_start, Headers}} ->
+		  	io:format("~p~n~n", [stream_start]);
+		 {http, {RequestId, stream, BinBodyPart}} ->
+		 	io:format("~p", [BinBodyPart]);
+		{http, {RequestId, stream_end, Headers}} ->
+		       io:format("~p~n~n", [stream_end])
+        end,
+	handle().
 
 
 -ifdef(TEST).
